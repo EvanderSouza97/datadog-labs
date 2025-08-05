@@ -28,14 +28,14 @@ jobs:
             cd /home/ubuntu/nestjs-lab
 
             # Exportar variáveis do Datadog
-            export DD_TRACE_ENABLED=${{ secrets.DD_TRACE_ENABLED }}
-            export DD_LOGS_INJECTION=${{ secrets.DD_LOGS_INJECTION }}
-            export DD_RUNTIME_METRICS_ENABLED=${{ secrets.DD_RUNTIME_METRICS_ENABLED }}
-            export DD_SERVICE=${{ secrets.DD_SERVICE }}
-            export DD_ENV=${{ secrets.DD_ENV }}
-            export DD_VERSION=${{ secrets.DD_VERSION }}
-            export DD_AGENT_HOST=${{ secrets.DD_AGENT_HOST }}
-            export DD_SITE=${{ secrets.DD_SITE }}
+            export DD_TRACE_ENABLED=true
+            export DD_LOGS_INJECTION=true
+            export DD_RUNTIME_METRICS_ENABLED=true     # ← ESSENCIAL
+            export DD_SERVICE=nestjs-dd-lab
+            export DD_ENV=dev
+            export DD_VERSION=1.0.0
+            export DD_AGENT_HOST=127.0.0.1
+            export DD_SITE=datadoghq.com
 
             # Instalar dependências e rodar a aplicação com APM
             nohup npm install > install.log 2>&1
