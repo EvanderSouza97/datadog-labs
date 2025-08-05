@@ -1,0 +1,44 @@
+name: Deploy NestJS com Datadog APM
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v3
+
+      - name: Ativar chave SSH para acessar EC2
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Enviar projeto para EC2 via rsync
+        run: |
+          rsync -avz -e "ssh -o StrictHostKeyChecking=no" ./ ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/nestjs-lab
+
+      - name: Iniciar aplicação remotamente
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+            cd /home/ubuntu/nestjs-lab
+
+            # Exportar variáveis do Datadog
+            export DD_TRACE_ENABLED=${{ secrets.DD_TRACE_ENABLED }}
+            export DD_LOGS_INJECTION=${{ secrets.DD_LOGS_INJECTION }}
+            export DD_RUNTIME_METRICS_ENABLED=${{ secrets.DD_RUNTIME_METRICS_ENABLED }}
+            export DD_SERVICE=${{ secrets.DD_SERVICE }}
+            export DD_ENV=${{ secrets.DD_ENV }}
+            export DD_VERSION=${{ secrets.DD_VERSION }}
+            export DD_AGENT_HOST=${{ secrets.DD_AGENT_HOST }}
+            export DD_SITE=${{ secrets.DD_SITE }}
+
+            # Instalar dependências e rodar a aplicação com APM
+            nohup npm install > install.log 2>&1
+            nohup npm run start:dev > output.log 2>&1 &
+          EOF
+
