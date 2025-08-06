@@ -8,7 +8,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout do código
         uses: actions/checkout@v3
@@ -20,35 +19,25 @@ jobs:
 
       - name: Enviar projeto para EC2 via rsync
         run: |
-          rsync -azv -e "ssh -o StrictHostKeyChecking=no" ./ ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/nestjs-lab
+          rsync -avz -e "ssh -o StrictHostKeyChecking=no" ./ ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/nestjs-lab
 
-      - name: Iniciar aplicação remotamente com variáveis do Datadog
-        env:
-          DD_TRACE_ENABLED: ${{ secrets.DD_TRACE_ENABLED }}
-          DD_LOGS_INJECTION: ${{ secrets.DD_LOGS_INJECTION }}
-          DD_RUNTIME_METRICS_ENABLED: ${{ secrets.DD_RUNTIME_METRICS_ENABLED }}
-          DD_SERVICE: ${{ secrets.DD_SERVICE }}
-          DD_ENV: ${{ secrets.DD_ENV }}
-          DD_VERSION: ${{ secrets.DD_VERSION }}
-          DD_AGENT_HOST: ${{ secrets.DD_AGENT_HOST }}
-          DD_SITE: ${{ secrets.DD_SITE }}
+      - name: Iniciar aplicação remotamente
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << EOF
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
             cd /home/ubuntu/nestjs-lab
 
-            export DD_TRACE_ENABLED=$DD_TRACE_ENABLED
-            export DD_LOGS_INJECTION=$DD_LOGS_INJECTION
-            export DD_RUNTIME_METRICS_ENABLED=$DD_RUNTIME_METRICS_ENABLED
-            export DD_SERVICE=$DD_SERVICE
-            export DD_ENV=$DD_ENV
-            export DD_VERSION=$DD_VERSION
-            export DD_AGENT_HOST=$DD_AGENT_HOST
-            export DD_SITE=$DD_SITE
-
-            sudo systemctl restart datadog-agent || true
-
+            # Instalar dependências
             nohup npm install > install.log 2>&1
-            pkill -f "npm run start:dev" || true
+
+            # Rodar aplicação com Datadog APM usando variáveis inline
+            DD_TRACE_ENABLED=true \
+            DD_LOGS_INJECTION=true \
+            DD_RUNTIME_METRICS_ENABLED=true \
+            DD_SERVICE=nestjs-dd-lab \
+            DD_ENV=dev \
+            DD_VERSION=1.0.0 \
+            DD_AGENT_HOST=127.0.0.1 \
+            DD_SITE=datadoghq.com \
             nohup npm run start:dev > output.log 2>&1 &
-          EOF
+EOF
 
