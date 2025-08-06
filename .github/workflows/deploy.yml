@@ -41,5 +41,5 @@ jobs:
 
             # Rodar aplicação com APM ativo
             nohup npm run start:dev > output.log 2>&1 &
-EOF
+          EOF
 
