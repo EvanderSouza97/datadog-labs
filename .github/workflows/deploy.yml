@@ -20,7 +20,7 @@ jobs:
       - name: Enviar projeto para EC2 via rsync
         run: |
           rsync -avz -e "ssh -o StrictHostKeyChecking=no" ./ ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/nestjs-lab
-
+      
       - name: Iniciar aplicação remotamente
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
@@ -33,13 +33,34 @@ jobs:
             export DD_TRACE_ENABLED=true
             export DD_LOGS_INJECTION=true
             export DD_RUNTIME_METRICS_ENABLED=true
-            export DD_SERVICE=nestjs-dd-lab
-            export DD_ENV=dev
-            export DD_VERSION=1.0.0
-            export DD_AGENT_HOST=127.0.0.1
-            export DD_SITE=datadoghq.com
+            export DD_SERVICE=${{ secrets.DD_SERVICE || 'nestjs-dd-lab' }}
+            export DD_ENV=${{ secrets.DD_ENV || 'dev' }}
+            export DD_VERSION=${{ secrets.DD_VERSION || '1.0.0' }}
+            export DD_AGENT_HOST=${{ secrets.DD_AGENT_HOST || '127.0.0.1' }}
+            export DD_SITE=${{ secrets.DD_SITE || 'datadoghq.com' }}
 
             # Rodar aplicação com APM ativo
             nohup npm run start:dev > output.log 2>&1 &
           EOF
 
+      # - name: Iniciar aplicação remotamente
+      #   run: |
+      #     ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+      #       cd /home/ubuntu/nestjs-lab
+
+      #       # Instalar dependências
+      #       nohup npm install > install.log 2>&1
+
+      #       # Exportar variáveis de ambiente do Datadog
+      #       export DD_TRACE_ENABLED=true
+      #       export DD_LOGS_INJECTION=true
+      #       export DD_RUNTIME_METRICS_ENABLED=true
+      #       export DD_SERVICE=nestjs-dd-lab
+      #       export DD_ENV=dev
+      #       export DD_VERSION=1.0.0
+      #       export DD_AGENT_HOST=127.0.0.1
+      #       export DD_SITE=datadoghq.com
+
+      #       # Rodar aplicação com APM ativo
+      #       nohup npm run start:dev > output.log 2>&1 &
+      #     EOF
