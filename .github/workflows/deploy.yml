@@ -8,6 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout do código
         uses: actions/checkout@v3
@@ -19,36 +20,24 @@ jobs:
 
       - name: Enviar projeto para EC2 via rsync
         run: |
-          echo "🔄 Enviando arquivos para EC2..."
           rsync -avz -e "ssh -o StrictHostKeyChecking=no" ./ ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/nestjs-lab
 
-      - name: Iniciar aplicação remotamente com Datadog APM
+      - name: Instalar dependências na EC2
         run: |
-          echo "🚀 Conectando na EC2 e executando comandos remotos..."
-          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
-            set -e
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} "cd /home/ubuntu/nestjs-lab && npm install > install.log 2>&1"
 
-            echo "📁 Entrando na pasta do projeto"
-            cd /home/ubuntu/nestjs-lab
-            echo "Diretório atual: $(pwd)"
-
-            echo "📦 Instalando dependências..."
-            npm install
-            echo "Código de saída npm install: $?"
-
-            echo "🐶 Iniciando aplicação com variáveis Datadog inline..."
+      - name: Iniciar aplicação com Datadog APM e Runtime Metrics
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} '
+            cd /home/ubuntu/nestjs-lab &&
             DD_TRACE_ENABLED=true \
             DD_LOGS_INJECTION=true \
             DD_RUNTIME_METRICS_ENABLED=true \
-            DD_SERVICE='${{ secrets.DD_SERVICE }}' \
-            DD_ENV='${{ secrets.DD_ENV }}' \
-            DD_VERSION='${{ secrets.DD_VERSION }}' \
-            DD_AGENT_HOST='${{ secrets.DD_AGENT_HOST }}' \
-            DD_SITE='${{ secrets.DD_SITE }}' \
+            DD_SERVICE=nestjs-dd-lab \
+            DD_ENV=dev \
+            DD_VERSION=1.0.0 \
+            DD_AGENT_HOST=127.0.0.1 \
+            DD_SITE=datadoghq.com \
             nohup npm run start:dev > output.log 2>&1 &
-
-            echo "📄 Últimas 10 linhas do log da aplicação:"
-            sleep 2
-            tail -n 10 output.log || echo "output.log ainda não existe"
-          EOF
-
+          '
+ 
