@@ -36,7 +36,7 @@ jobs:
             DD_SERVICE=nestjs-dd-lab \
             DD_ENV=dev \
             DD_VERSION=1.0.0 \
-            DD_AGENT_HOST=127.0.0.1 \
+            DD_AGENT_HOST=34.224.82.251 \
             DD_SITE=datadoghq.com \
             nohup npm run start:dev > output.log 2>&1 &
           '
